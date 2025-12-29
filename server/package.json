@@ -1,0 +1,40 @@
+{
+  "name": "edutracker",
+  "version": "1.0.0",
+  "description": "EduTracker is a comprehensive school management API built with Node.js, Express, PostgreSQL, and Sequelize. It manages students, teachers, attendance, grades, behavior records, communications, reports, and notifications. The system provides role-based authentication for admins, teachers, students, and parents, with full RESTful API endpoints and JSON responses. Designed for scalability and relational data integrity, supporting JSONB fields for flexible data storage.",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [
+    "school",
+    "education",
+    "Node.js",
+    "Express",
+    "PostgreSQL",
+    "Sequelize",
+    "REST",
+    "backend"
+  ],
+  "author": "MohamedKaled Mohamed shaban",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "nanoid": "^5.1.6",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
