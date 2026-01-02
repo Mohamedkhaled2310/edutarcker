@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db_config.js';
-
+import Joi from 'joi';
 
   const Attendance = sequelize.define('Attendance', {
     id: {
@@ -81,5 +81,26 @@ import sequelize from '../config/db_config.js';
       as: 'recordedBy'
     });
   };
+export const validateRecordAttendance = (obj) => {
+    const schema = Joi.object({
+        date: Joi.date().iso().required().messages({
+            'date.format': 'تنسيق التاريخ غير صحيح، يجب أن يكون YYYY-MM-DD'
+        }),
+records: Joi.array().items(
+            Joi.object({
+                studentId: Joi.string().uuid().required(),
+                status: Joi.string().valid('present', 'absent', 'late', 'excused').required(),
+                checkInTime: Joi.string().regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/).optional(),
+                checkOutTime: Joi.string().regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/).optional(),
+                reason: Joi.string().allow('').optional(),
+                notes: Joi.string().allow('').optional(),
+                parentNotified: Joi.boolean().optional().default(false)
+            })
+        ).min(1).required().messages({
+            'array.min': 'يجب إرسال سجل حضور واحد على الأقل'
+        })
+    });
+    return schema.validate(obj);
+}          
 
 export default Attendance;

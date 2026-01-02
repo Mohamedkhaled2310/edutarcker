@@ -152,13 +152,13 @@ const validateCreateStudent = (obj) => {
         address: Joi.string().min(5).required(),
         parentPhone: Joi.string().pattern(/^[0-9]+$/).min(10).required(),
         parentEmail: Joi.string().email().required(),
-        
         bloodType: Joi.string().valid('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-').required().messages({
             'any.only': 'فصيلة الدم يجب أن تكون واحدة من الفصائل المعروفة',
             'any.required': 'فصيلة الدم مطلوبة للجيل الجديد من السجلات'
         }),
         allergies: Joi.array().items(Joi.string()).optional().default([]),
-        conditions: Joi.array().items(Joi.string()).optional().default([])
+        conditions: Joi.array().items(Joi.string()).optional().default([]),
+        academicYear: Joi.string().required(),
     });
 
     return schema.validate(obj);

@@ -4,8 +4,9 @@ import cookieParser from 'cookie-parser';
 import sequelize from './config/db_config.js';
 import { syncTables } from './config/db_config.js';
 import authRoutes from './routes/authRoutes.js';
-import dashboardRoutes from './routes/dashboardRoutes.js'
-import studentRouter from './routes/studentRoutes.js'
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import studentRouter from './routes/studentRoutes.js';
+import attendRoutes from './routes/atendanceRoutes.js';
 dotenv.config();
 
 
@@ -19,9 +20,10 @@ app.use(cookieParser());
 //     return res.status(404).json({success:httpStatusText.FAIL,message:'Page not found'});
 // });
 
-app.use('/api/auth',authRoutes)
-app.use('/api/dashboard',dashboardRoutes)
+app.use('/api/auth',authRoutes);
+app.use('/api/dashboard',dashboardRoutes);
 app.use('/api/students', studentRouter);
+app.use('/api/attendance',attendRoutes);
 //global error handler 
 app.use((error,req,res,next)=>{
     res.status(error.statusCode || 500).json({

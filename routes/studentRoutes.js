@@ -9,11 +9,11 @@ import {
 
 const router = express.Router();
 
-router.get('/',getAllStudents);
+router.get('/all-student',getAllStudents);
 
 router.post('/create-student', createStudent);
 
-router.route('/:id')
+router.route('/spacific-student/:id')
 .get(getStudentById)
 .put(updateStudent)
 .delete(deleteStudent);

@@ -1,8 +1,11 @@
 import { asyncWrapper } from '../middlewares/asyncWrapper.js';
 import { models } from '../utils/db_instance.js';
 import { Op } from 'sequelize';
-
+import { validateCreateStudent, validateUpdateStudent } from '../models/student.js';
+import appError from '../utils/app_error.js';
+import httpStatusText from '../utils/httpStatusText.js';
 const { Student, Class, Parent } = models;
+import sequelize from '../utils/db_instance.js';
 /**
  * @desc    Get all students with pagination and filters
  * @route   GET /api/students
@@ -14,10 +17,7 @@ const getAllStudents = asyncWrapper(async (req, res, next) => {
 
     const studentFilter = {};
     const classFilter = {};
-
-    if (req.query.status) {
-        studentFilter.status = req.query.status;
-    }
+    studentFilter.status = req.query.status || 'active';
     if (req.query.search) {
         studentFilter.name = { [Op.iLike]: `%${req.query.search}%` };
     }
@@ -119,10 +119,10 @@ const getStudentById = asyncWrapper(async (req, res) => {
     });
 
     if (!student) {
-       return next(
+        return next(
             appError.create(
-                `لا يوجد طالب مسجل بهذا الـ : ${id}`, 
-                404, 
+                `لا يوجد طالب مسجل بهذا الـ : ${id}`,
+                404,
                 httpStatusText.FAIL
             )
         );
@@ -169,15 +169,15 @@ const createStudent = asyncWrapper(async (req, res, next) => {
     const { error } = validateCreateStudent(req.body);
     if (error) return next(appError.create(error.details[0].message, 400, httpStatusText.FAIL));
 
-    const { 
-        name, grade, class: section, dateOfBirth, nationality, address,
-        parentPhone, parentEmail, bloodType, allergies = [], conditions = [] 
+    const {
+        name, grade, class: section, dateOfBirth, nationality, address, academicYear,
+        parentPhone, parentEmail, bloodType, allergies = [], conditions = []
     } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
-        const targetClass = await Class.findOne({ where: { grade, name: section }, transaction });
+        const targetClass = await Class.findOne({ where: { grade, section, academicYear }, transaction });
         if (!targetClass) {
             await transaction.rollback();
             return next(appError.create("الفصل الدراسي غير موجود", 404, httpStatusText.FAIL));
@@ -248,4 +248,4 @@ const deleteStudent = asyncWrapper(async (req, res, next) => {
     res.status(200).json({ success: true, message: "تم أرشفة الطالب بنجاح" });
 });
 
-export {getAllStudents,getStudentById,createStudent,updateStudent,deleteStudent}
+export { getAllStudents, getStudentById, createStudent, updateStudent, deleteStudent }
