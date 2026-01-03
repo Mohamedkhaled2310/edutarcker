@@ -8,6 +8,8 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import studentRouter from './routes/studentRoutes.js';
 import attendRoutes from './routes/atendanceRoutes.js';
 import teachersRoutes from './routes/teachers.js';
+import gradesRoutes from './routes/grades.js';
+import communicationsRoutes from './routes/communications.js';
 dotenv.config();
 
 
@@ -26,6 +28,8 @@ app.use('/api/dashboard',dashboardRoutes);
 app.use('/api/students', studentRouter);
 app.use('/api/attendance',attendRoutes);
 app.use('/api/teachers',teachersRoutes);
+app.use('/api/grades',gradesRoutes);
+app.use('/api/communications',communicationsRoutes);
 //global error handler 
 app.use((error,req,res,next)=>{
     res.status(error.statusCode || 500).json({
