@@ -11,8 +11,9 @@ import teachersRoutes from './routes/teachers.js';
 import gradesRoutes from './routes/grades.js';
 import communicationsRoutes from './routes/communications.js';
 import subjectsRoutes from './routes/subjects.js';
+import reportsRoutes from './routes/reports.js';
 import cors from "cors";
-
+  
 dotenv.config();
 
 
@@ -38,6 +39,7 @@ app.use('/api/teachers',teachersRoutes);
 app.use('/api/grades',gradesRoutes);
 app.use('/api/communications',communicationsRoutes);
 app.use('/api/subjects',subjectsRoutes);
+app.use('/api/reports',reportsRoutes);
 //global error handler 
 app.use((error,req,res,next)=>{
     res.status(error.statusCode || 500).json({
