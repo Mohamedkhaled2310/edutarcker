@@ -105,4 +105,73 @@ const recordGrade = asyncWrapper(async (req, res) => {
   });
 });
 
-export { getStudentGrades, recordGrade };
+/**
+ * PUT /grades/:id
+ */
+/**
+ * PUT /grades
+ */
+const updateGrade = asyncWrapper(async (req, res, next) => {
+  const { studentId, subjectId, semester, year, type, score } = req.body;
+
+  const grade = await Grade.findOne({
+    where: {
+      studentId,
+      subjectId,
+      semester,
+      academicYear: year
+    }
+  });
+
+  if (!grade) {
+    return next(
+      appError.create('الدرجة غير موجودة', 404, httpStatusText.FAIL)
+    );
+  }
+
+  await grade.update({
+    [type]: score,
+    recordedById: req.user.id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'تم تحديث الدرجة بنجاح'
+  });
+});
+
+
+/**
+ * DELETE /grades/:id
+ */
+/**
+ * DELETE /grades
+ */
+const deleteGrade = asyncWrapper(async (req, res, next) => {
+  const { studentId, subjectId, semester, year } = req.body;
+
+  const grade = await Grade.findOne({
+    where: {
+      studentId,
+      subjectId,
+      semester,
+      academicYear: year
+    }
+  });
+
+  if (!grade) {
+    return next(
+      appError.create('الدرجة غير موجودة', 404, httpStatusText.FAIL)
+    );
+  }
+
+  await grade.destroy();
+
+  res.status(200).json({
+    success: true,
+    message: 'تم حذف الدرجة بنجاح'
+  });
+});
+
+
+export { getStudentGrades, recordGrade, updateGrade, deleteGrade };

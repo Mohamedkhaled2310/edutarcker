@@ -10,10 +10,17 @@ import attendRoutes from './routes/atendanceRoutes.js';
 import teachersRoutes from './routes/teachers.js';
 import gradesRoutes from './routes/grades.js';
 import communicationsRoutes from './routes/communications.js';
+import subjectsRoutes from './routes/subjects.js';
+import cors from "cors";
+
 dotenv.config();
 
 
 const app =express();
+app.use(cors({
+  origin: "http://localhost:8081",
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -30,6 +37,7 @@ app.use('/api/attendance',attendRoutes);
 app.use('/api/teachers',teachersRoutes);
 app.use('/api/grades',gradesRoutes);
 app.use('/api/communications',communicationsRoutes);
+app.use('/api/subjects',subjectsRoutes);
 //global error handler 
 app.use((error,req,res,next)=>{
     res.status(error.statusCode || 500).json({

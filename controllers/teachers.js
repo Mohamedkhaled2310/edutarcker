@@ -17,7 +17,10 @@ const getTeachers = asyncWrapper(async (req, res) => {
   };
 
   const teachers = await Teacher.findAll({
-    where: whereClause,
+    where: {
+      ...whereClause,
+      status: 'active'
+    },  
     include: [
       {
         model: Subject,
