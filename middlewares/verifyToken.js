@@ -5,20 +5,26 @@ import { handleJWTError } from '../utils/jwt_error_handler.js';
 
 
 export const verifyToken = (req, res, next) => {
-    const token = req.cookies.token
-    if (!token) {
-        const error = AppError.create("unauthorized -no token provided", 401, httpStatusText.ERROR)
-        return next(error);
-    }
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!decoded) {
-            const error = AppError.create("unauthorized -invalid token", 401, httpStatusText.ERROR)
-            return next(error);
-        }
-        req.user= decoded;
-        next();
-    } catch (err) {
-     handleJWTError(err,next);
-    }
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next(
+      AppError.create(
+        "unauthorized - no token provided",
+        401,
+        httpStatusText.ERROR
+      )
+    );
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    handleJWTError(err, next);
+  }
 };
+
