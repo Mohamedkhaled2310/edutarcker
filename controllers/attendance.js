@@ -7,6 +7,7 @@ import httpStatusText from '../utils/httpStatusText.js';
 import { validateRecordAttendance } from '../models/attendance.js';
 
 const { Attendance, Student, Class } = models;
+ 
 
 
 const getAttendance = asyncWrapper(async (req, res, next) => {
