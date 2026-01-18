@@ -12,6 +12,7 @@ import Communication from '../models/communication.js';
 import Notification from '../models/notification.js';
 import Circular from '../models/circular.js';
 import Report from '../models/report.js';
+import TeacherSupportRecord from '../models/teacherSupportRecord.js';
 import sequelize from '../config/db_config.js';
 
 
@@ -29,13 +30,14 @@ const models = {
   Communication,
   Notification,
   Circular,
-  Report
+  Report,
+  TeacherSupportRecord
 }
 
 
 
 export const syncTables = async () => {
-  await sequelize.sync({alter:false})
+  await sequelize.sync({ alter: false })
 }
 
 export default sequelize;
@@ -46,4 +48,4 @@ Object.values(models).forEach(model => {
   }
 });
 
-export { models ,sequelize };
+export { models, sequelize };
