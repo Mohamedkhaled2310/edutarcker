@@ -4,8 +4,9 @@ import { Op } from 'sequelize';
 import { validateCreateStudent, validateUpdateStudent } from '../models/student.js';
 import appError from '../utils/app_error.js';
 import httpStatusText from '../utils/httpStatusText.js';
-const { Student, Class, Parent } = models;
+const { Student, Class, Parent, Teacher } = models;
 import sequelize from '../utils/db_instance.js';
+import { calculateAttendanceStats, getAttendanceCategory, getCategorySeverity } from '../utils/attendanceUtils.js';
 /**
  * @desc    Get all students with pagination and filters
  * @route   GET /api/students
@@ -24,14 +25,22 @@ const getAllStudents = asyncWrapper(async (req, res, next) => {
     if (req.query.grade) {
         classFilter.grade = req.query.grade;
     }
+    if (req.query.category) {
+        studentFilter.studentCategory = req.query.category;
+    }
+
+    // Store attendance category filter for later processing
+    const attendanceCategory = req.query.attendanceCategory;
 
     const totalStudents = await Student.count({
         where: studentFilter,
         include: [{
             model: Class,
             as: 'class',
-            where: Object.keys(classFilter).length > 0 ? classFilter : null
-        }]
+            where: Object.keys(classFilter).length > 0 ? classFilter : null,
+            attributes: []  // Don't need any attributes for counting
+        }],
+        distinct: true  // Count distinct students
     });
 
     const totalPages = Math.ceil(totalStudents / limit);
@@ -46,17 +55,29 @@ const getAllStudents = asyncWrapper(async (req, res, next) => {
         );
     }
 
+    const hasClassFilter = Object.keys(classFilter).length > 0;
+
     const students = await Student.findAll({
         where: studentFilter,
         limit,
         offset: skip,
+        subQuery: false,
         order: [['createdAt', 'DESC']],
         include: [
             {
                 model: Class,
                 as: 'class',
-                where: Object.keys(classFilter).length > 0 ? classFilter : null,
-                attributes: ['name', 'grade']
+                required: hasClassFilter,
+                where: hasClassFilter ? classFilter : undefined,
+                attributes: ['name', 'grade', 'section'],
+                include: [
+                    {
+                        model: Teacher,
+                        as: 'classTeacher',
+                        attributes: ['name'],
+                        required: false
+                    }
+                ]
             },
             {
                 model: Parent,
@@ -67,19 +88,46 @@ const getAllStudents = asyncWrapper(async (req, res, next) => {
         ]
     });
 
-    const formattedStudents = students.map(s => ({
-        id: s.id,
-        name: s.name,
-        studentId: s.studentId,
-        grade: s.class?.grade || 'غير محدد',
-        class: s.class?.name || 'غير محدد',
-        avatar: s.avatar?.secure_url,
-        status: s.status,
-        attendanceRate: parseFloat(s.attendanceRate) || 0,
-        behaviorScore: s.behaviorScore,
-        parentPhone: s.parents?.[0]?.fatherPhone || 'غير مسجل',
-        createdAt: s.createdAt
-    }));
+
+
+    // Calculate attendance categories for each student
+    const formattedStudentsPromises = students.map(async (s) => {
+        const attendanceStats = await calculateAttendanceStats(s.id);
+        const studentAttendanceCategory = getAttendanceCategory(attendanceStats);
+        const severity = getCategorySeverity(studentAttendanceCategory);
+
+        return {
+            id: s.id,
+            name: s.name,
+            studentId: s.studentId,
+            grade: s.class?.grade || 'غير محدد',
+            class: s.class?.name || 'غير محدد',
+            section: s.class?.section || 'غير محدد',
+            classTeacher: s.class?.classTeacher?.name || 'غير محدد',
+            avatar: s.avatar?.secure_url,
+            status: s.status,
+            attendanceRate: parseFloat(s.attendanceRate) || 0,
+            behaviorScore: s.behaviorScore,
+            studentCategory: s.studentCategory || 'عادي',
+            parentPhone: s.parents?.[0]?.fatherPhone || 'غير مسجل',
+            createdAt: s.createdAt,
+            attendanceCategory: studentAttendanceCategory,
+            attendanceSeverity: severity,
+            attendanceStats: {
+                totalDays: attendanceStats.totalDays,
+                absentDays: attendanceStats.absentDays,
+                lateDays: attendanceStats.lateDays,
+                fridayAbsences: attendanceStats.fridayAbsences
+            }
+        };
+    });
+
+    let formattedStudents = await Promise.all(formattedStudentsPromises);
+
+    // Filter by attendance category if specified
+    if (attendanceCategory && attendanceCategory !== 'all') {
+        formattedStudents = formattedStudents.filter(s => s.attendanceCategory === attendanceCategory);
+    }
 
     res.status(200).json({
         success: true,
@@ -108,11 +156,14 @@ const getStudentById = asyncWrapper(async (req, res) => {
             {
                 model: Class,
                 as: 'class',
-                attributes: ['name', 'grade']
+                attributes: ['name', 'grade', 'section']
             },
             {
                 model: Parent,
                 as: 'parents',
+                attributes: ['fatherName', 'fatherPhone', 'fatherEmail', 'fatherOccupation',
+                    'motherName', 'motherPhone', 'motherEmail', 'motherOccupation',
+                    'primaryContact', 'address', 'emergencyContact', 'nationalId'],
                 through: { attributes: [] }
             }
         ]
@@ -139,17 +190,27 @@ const getStudentById = asyncWrapper(async (req, res) => {
             studentId: student.studentId,
             grade: student.class?.grade,
             class: student.class?.name,
+            section: student.class?.section,
             avatar: student.avatar?.secure_url,
             dateOfBirth: student.dateOfBirth,
             nationality: student.nationality,
             address: student.address,
             enrollmentDate: student.enrollmentDate,
             status: student.status,
+            studentCategory: student.studentCategory || 'عادي',
             parent: {
                 fatherName: mainParent.fatherName,
                 fatherPhone: mainParent.fatherPhone,
+                fatherEmail: mainParent.fatherEmail,
+                fatherOccupation: mainParent.fatherOccupation,
                 motherName: mainParent.motherName,
                 motherPhone: mainParent.motherPhone,
+                motherEmail: mainParent.motherEmail,
+                motherOccupation: mainParent.motherOccupation,
+                primaryContact: mainParent.primaryContact,
+                address: mainParent.address,
+                emergencyContact: mainParent.emergencyContact,
+                nationalId: mainParent.nationalId,
                 email: mainParent.fatherEmail || mainParent.motherEmail
             },
             medical: {

@@ -12,7 +12,23 @@ const { BehaviorRecord, Student, Teacher } = models;
  * @access  Admin/Teacher
  */
 const createViolation = asyncWrapper(async (req, res, next) => {
-    const { studentIdCode, employeeId, type, severity, description, date } = req.body;
+    const {
+        studentIdCode,
+        employeeId,
+        type,
+        severity,
+        description,
+        date,
+        marksDeducted,
+        occurrenceCount,
+        behaviorNotes,
+        isChildProtectionCase
+    } = req.body;
+
+    // Validate marksDeducted range
+    if (marksDeducted !== undefined && (marksDeducted < 0 || marksDeducted > 4)) {
+        return next(appError.create('Marks deducted must be between 0 and 4', 400, httpStatusText.FAIL));
+    }
 
     const student = await Student.findOne({ where: { studentId: studentIdCode } });
     if (!student) {
@@ -33,8 +49,18 @@ const createViolation = asyncWrapper(async (req, res, next) => {
         description,
         date: date || new Date(),
         status: 'pending',
-        points: 0
+        points: 0,
+        marksDeducted: marksDeducted || 0,
+        occurrenceCount: occurrenceCount || 1,
+        behaviorNotes: behaviorNotes || null,
+        isChildProtectionCase: isChildProtectionCase || false
     });
+
+    // Deduct marks from student's behavior score if specified
+    if (marksDeducted && marksDeducted > 0) {
+        await student.decrement('behaviorScore', { by: marksDeducted });
+        await student.reload();
+    }
 
     res.status(201).json({
         success: true,
@@ -43,8 +69,11 @@ const createViolation = asyncWrapper(async (req, res, next) => {
             id: violation.id,
             studentName: student.name,
             reportedBy: teacher.name,
-            date: violation.date
-
+            date: violation.date,
+            marksDeducted: violation.marksDeducted,
+            occurrenceCount: violation.occurrenceCount,
+            isChildProtectionCase: violation.isChildProtectionCase,
+            currentBehaviorScore: student.behaviorScore
         }
     });
 });
@@ -103,11 +132,14 @@ const getViolations = asyncWrapper(async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
-    const { severity, status } = req.query;
+    const { severity, status, isChildProtectionCase } = req.query;
 
     const whereClause = { category: 'violation' };
     if (severity) whereClause.severity = severity;
     if (status) whereClause.status = status;
+    if (isChildProtectionCase !== undefined) {
+        whereClause.isChildProtectionCase = isChildProtectionCase === 'true';
+    }
 
     const { count, rows } = await BehaviorRecord.findAndCountAll({
         where: whereClause,
@@ -139,8 +171,11 @@ const getViolations = asyncWrapper(async (req, res, next) => {
         reportedBy: v.reportedBy?.name || 'Unknown',
         status: v.status,
         action: v.action,
-        currentScore: v.student?.behaviorScore
-
+        currentScore: v.student?.behaviorScore,
+        marksDeducted: v.marksDeducted,
+        occurrenceCount: v.occurrenceCount,
+        behaviorNotes: v.behaviorNotes,
+        isChildProtectionCase: v.isChildProtectionCase
     }));
 
     res.status(200).json({
@@ -150,9 +185,9 @@ const getViolations = asyncWrapper(async (req, res, next) => {
             stats: {
                 total: count,
                 pending: await BehaviorRecord.count({ where: { category: 'violation', status: 'pending' } }),
-                resolved: await BehaviorRecord.count({ where: { category: 'violation', status: 'resolved' } })
+                resolved: await BehaviorRecord.count({ where: { category: 'violation', status: 'resolved' } }),
+                childProtectionCases: await BehaviorRecord.count({ where: { category: 'violation', isChildProtectionCase: true } })
             }
-
         }
     });
 });
