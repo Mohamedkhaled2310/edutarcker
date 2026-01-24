@@ -11,10 +11,34 @@ const { Grade, Student, Subject, Teacher } = models;
  */
 const getStudentGrades = asyncWrapper(async (req, res, next) => {
   const { studentId } = req.params;
-  const { semester, year } = req.query;
+  const { semester, year, gradeLevel, performanceRange } = req.query;
 
   const student = await Student.findByPk(studentId);
   if (!student) return next(appError.create('الطالب غير موجود', 404, httpStatusText.FAIL));
+
+  // Apply grade level filter if provided
+  if (gradeLevel && student.grade !== gradeLevel) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        student: {
+          id: student.id,
+          name: student.name,
+          grade: student.grade,
+          class: student.class
+        },
+        semester: semester ? parseInt(semester) : null,
+        year: year || null,
+        subjects: [],
+        summary: {
+          totalPercentage: 0,
+          rank: 0,
+          totalStudents: 0,
+          gpa: '0.0'
+        }
+      }
+    });
+  }
 
   const whereClause = { studentId };
   if (semester) whereClause.semester = semester;
@@ -26,13 +50,13 @@ const getStudentGrades = asyncWrapper(async (req, res, next) => {
     order: [['createdAt', 'ASC']]
   });
 
-  const subjects = grades.map(g => {
+  let subjects = grades.map(g => {
     const total = parseFloat(g.homework) + parseFloat(g.participation) + parseFloat(g.midterm) + parseFloat(g.final);
     const percentage = Math.round((total / 200) * 100); // example scale
     const letterGrade = percentage >= 90 ? 'ممتاز' :
-                        percentage >= 80 ? 'جيد جداً' :
-                        percentage >= 70 ? 'جيد' :
-                        percentage >= 60 ? 'مقبول' : 'ضعيف';
+      percentage >= 80 ? 'جيد جداً' :
+        percentage >= 70 ? 'جيد' :
+          percentage >= 60 ? 'مقبول' : 'ضعيف';
 
     return {
       name: g.subject.name,
@@ -40,11 +64,25 @@ const getStudentGrades = asyncWrapper(async (req, res, next) => {
       participation: parseFloat(g.participation),
       midterm: parseFloat(g.midterm),
       final: parseFloat(g.final),
+      diagnosticTest: parseFloat(g.diagnosticTest),
+      formativeTest: parseFloat(g.formativeTest),
+      finalTest: parseFloat(g.finalTest),
+      semesterGrade: parseFloat(g.semesterGrade),
       total,
       percentage,
       grade: letterGrade
     };
   });
+
+  // Apply performance range filter if provided
+  if (performanceRange) {
+    subjects = subjects.filter(subject => {
+      if (performanceRange === 'below50') return subject.percentage < 50;
+      if (performanceRange === '50to69') return subject.percentage >= 50 && subject.percentage < 70;
+      if (performanceRange === '70andAbove') return subject.percentage >= 70;
+      return true;
+    });
+  }
 
   const totalPercentage = subjects.length
     ? Math.round(subjects.reduce((acc, s) => acc + s.percentage, 0) / subjects.length)
@@ -81,20 +119,38 @@ const getStudentGrades = asyncWrapper(async (req, res, next) => {
 const recordGrade = asyncWrapper(async (req, res) => {
   const { studentId, subjectId, semester, type, score, maxScore } = req.body;
 
+  // Validate assessment type
+  const validTypes = ['homework', 'participation', 'midterm', 'final', 'diagnostic', 'formative', 'finalTest', 'semesterGrade'];
+  if (!validTypes.includes(type)) {
+    return res.status(400).json({
+      success: false,
+      message: 'نوع التقييم غير صحيح'
+    });
+  }
+
+  // Map frontend type names to database field names
+  const typeMapping = {
+    'diagnostic': 'diagnosticTest',
+    'formative': 'formativeTest',
+    'finalTest': 'finalTest',
+    'semesterGrade': 'semesterGrade'
+  };
+  const dbFieldName = typeMapping[type] || type;
+
   const grade = await Grade.findOne({
     where: { studentId, subjectId, semester, academicYear: req.body.year }
   });
 
   if (grade) {
     // Update score type
-    await grade.update({ [type]: score });
+    await grade.update({ [dbFieldName]: score });
   } else {
     await Grade.create({
       studentId,
       subjectId,
       semester,
       academicYear: req.body.year,
-      [type]: score,
+      [dbFieldName]: score,
       recordedById: req.user.id
     });
   }

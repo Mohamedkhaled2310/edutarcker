@@ -13,12 +13,13 @@ import communicationsRoutes from './routes/communications.js';
 import subjectsRoutes from './routes/subjects.js';
 import behaviorRoutes from './routes/behaviorRoutes.js';
 import reportsRoutes from './routes/reports.js';
+import classesRoutes from './routes/classes.js';
 import cors from "cors";
-  
+
 dotenv.config();
 
 
-const app =express();
+const app = express();
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -33,27 +34,28 @@ app.use(cookieParser());
 //     return res.status(404).json({success:httpStatusText.FAIL,message:'Page not found'});
 // });
 
-app.use('/api/auth',authRoutes);
-app.use('/api/dashboard',dashboardRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/students', studentRouter);
-app.use('/api/attendance',attendRoutes);
-app.use('/api/teachers',teachersRoutes);
-app.use('/api/grades',gradesRoutes);
-app.use('/api/communications',communicationsRoutes);
-app.use('/api/subjects',subjectsRoutes);
-app.use('/api/behavior',behaviorRoutes);
-app.use('/api/reports',reportsRoutes);
+app.use('/api/attendance', attendRoutes);
+app.use('/api/teachers', teachersRoutes);
+app.use('/api/grades', gradesRoutes);
+app.use('/api/communications', communicationsRoutes);
+app.use('/api/subjects', subjectsRoutes);
+app.use('/api/behavior', behaviorRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/classes', classesRoutes);
 //global error handler 
-app.use((error,req,res,next)=>{
-    res.status(error.statusCode || 500).json({
-        status:error.httpStatusText ||'error',
-        message:error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+app.use((error, req, res, next) => {
+  res.status(error.statusCode || 500).json({
+    status: error.httpStatusText || 'error',
+    message: error.message,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  });
 })
 
 
-const port=process.env.PORT
+const port = process.env.PORT
 
 sequelize.authenticate()
   .then(async () => {

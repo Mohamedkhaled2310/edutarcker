@@ -3,17 +3,18 @@ import { models } from '../utils/db_instance.js';
 import appError from '../utils/app_error.js';
 import httpStatusText from '../utils/httpStatusText.js';
 
-const { Subject, Teacher, Class,Grade } = models;
+const { Subject, Teacher, Class, Grade } = models;
 
 /**
  * GET /subjects
  */
 const getSubjects = asyncWrapper(async (req, res) => {
-  const { gradeLevel, status } = req.query;
+  const { gradeLevel, status, subjectType } = req.query;
 
   const whereClause = {
     ...(gradeLevel && { gradeLevel }),
-    ...(status && { status })
+    ...(status && { status }),
+    ...(subjectType && { subjectType })
   };
 
   const subjects = await Subject.findAll({
