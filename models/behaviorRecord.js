@@ -26,7 +26,7 @@ const BehaviorRecord = sequelize.define('BehaviorRecord', {
     defaultValue: 'violation'
   },
   severity: {
-    type: DataTypes.ENUM('low', 'medium', 'high', 'critical'),
+    type: DataTypes.ENUM('first_degree', 'second_degree', 'third_degree', 'fourth_degree'),
     allowNull: true
   },
   description: {
@@ -50,7 +50,7 @@ const BehaviorRecord = sequelize.define('BehaviorRecord', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'teachers',
+      model: 'users',  // Changed from 'teachers' to 'users'
       key: 'id'
     }
   },
@@ -139,8 +139,8 @@ BehaviorRecord.associate = (models) => {
     as: 'student'
   });
 
-  // Belongs to Teacher (who reported it)
-  BehaviorRecord.belongsTo(models.Teacher, {
+  // Belongs to User (who reported it - can be admin or teacher)
+  BehaviorRecord.belongsTo(models.User, {
     foreignKey: 'reportedById',
     as: 'reportedBy'
   });

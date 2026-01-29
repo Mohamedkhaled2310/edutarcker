@@ -13,6 +13,10 @@ import Notification from '../models/notification.js';
 import Circular from '../models/circular.js';
 import Report from '../models/report.js';
 import TeacherSupportRecord from '../models/teacherSupportRecord.js';
+import Lesson from '../models/lesson.js';
+import Question from '../models/question.js';
+import StudentProgress from '../models/studentProgress.js';
+import StudentAnswer from '../models/studentAnswer.js';
 import sequelize from '../config/db_config.js';
 
 
@@ -31,7 +35,11 @@ const models = {
   Notification,
   Circular,
   Report,
-  TeacherSupportRecord
+  TeacherSupportRecord,
+  Lesson,
+  Question,
+  StudentProgress,
+  StudentAnswer
 }
 
 

@@ -7,6 +7,7 @@ import httpStatusText from '../utils/httpStatusText.js';
 const { Student, Class, Parent, Teacher } = models;
 import sequelize from '../utils/db_instance.js';
 import { calculateAttendanceStats, getAttendanceCategory, getCategorySeverity } from '../utils/attendanceUtils.js';
+import { calculateStudentLevel, calculateAcademicStatus, calculateClassRank } from '../utils/studentUtils.js';
 /**
  * @desc    Get all students with pagination and filters
  * @route   GET /api/students
@@ -109,6 +110,7 @@ const getAllStudents = asyncWrapper(async (req, res, next) => {
             attendanceRate: parseFloat(s.attendanceRate) || 0,
             behaviorScore: s.behaviorScore,
             studentCategory: s.studentCategory || 'عادي',
+            studentLevel: s.studentLevel || 'medium',
             parentPhone: s.parents?.[0]?.fatherPhone || 'غير مسجل',
             createdAt: s.createdAt,
             attendanceCategory: studentAttendanceCategory,
@@ -182,6 +184,15 @@ const getStudentById = asyncWrapper(async (req, res) => {
 
     const mainParent = student.parents?.[0] || {};
 
+    // Calculate student level, academic status, and rank
+    const studentLevel = await calculateStudentLevel(student.id);
+    const classRank = await calculateClassRank(student.id, student.classId);
+
+    // Update student level if changed
+    if (student.studentLevel !== studentLevel) {
+        await student.update({ studentLevel });
+    }
+
     res.status(200).json({
         success: true,
         data: {
@@ -198,6 +209,8 @@ const getStudentById = asyncWrapper(async (req, res) => {
             enrollmentDate: student.enrollmentDate,
             status: student.status,
             studentCategory: student.studentCategory || 'عادي',
+            studentLevel: studentLevel,
+            classRank: classRank,
             parent: {
                 fatherName: mainParent.fatherName,
                 fatherPhone: mainParent.fatherPhone,

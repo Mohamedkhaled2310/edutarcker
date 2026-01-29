@@ -91,6 +91,13 @@ Subject.associate = (models) => {
     foreignKey: 'subjectId',
     as: 'grades'
   });
+
+  // Has many Lessons
+  Subject.hasMany(models.Lesson, {
+    foreignKey: 'subjectId',
+    as: 'lessons',
+    onDelete: 'CASCADE'
+  });
 };
 
 export default Subject;

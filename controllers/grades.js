@@ -3,6 +3,7 @@ import { models } from '../utils/db_instance.js';
 import appError from '../utils/app_error.js';
 import httpStatusText from '../utils/httpStatusText.js';
 import { Op } from 'sequelize';
+import { calculateAcademicStatus, calculateClassRank } from '../utils/studentUtils.js';
 
 const { Grade, Student, Subject, Teacher } = models;
 
@@ -33,8 +34,7 @@ const getStudentGrades = asyncWrapper(async (req, res, next) => {
         summary: {
           totalPercentage: 0,
           rank: 0,
-          totalStudents: 0,
-          gpa: '0.0'
+          academicStatus: 'at-risk'
         }
       }
     });
@@ -88,12 +88,14 @@ const getStudentGrades = asyncWrapper(async (req, res, next) => {
     ? Math.round(subjects.reduce((acc, s) => acc + s.percentage, 0) / subjects.length)
     : 0;
 
-  // Example rank & GPA (hardcoded for demo)
+  // Calculate academic status and class rank
+  const academicStatus = calculateAcademicStatus(totalPercentage);
+  const classRank = await calculateClassRank(student.id, student.classId);
+
   const summary = {
     totalPercentage,
-    rank: 5,
-    totalStudents: 30,
-    gpa: (totalPercentage / 25).toFixed(1)
+    rank: classRank,
+    academicStatus
   };
 
   res.status(200).json({

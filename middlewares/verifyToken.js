@@ -7,7 +7,9 @@ import { handleJWTError } from '../utils/jwt_error_handler.js';
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('❌ No valid auth header found');
     return next(
       AppError.create(
         "unauthorized - no token provided",

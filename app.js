@@ -14,6 +14,8 @@ import subjectsRoutes from './routes/subjects.js';
 import behaviorRoutes from './routes/behaviorRoutes.js';
 import reportsRoutes from './routes/reports.js';
 import classesRoutes from './routes/classes.js';
+import lessonRoutes from './routes/lessonRoutes.js';
+import progressRoutes from './routes/progressRoutes.js';
 import cors from "cors";
 
 dotenv.config();
@@ -45,6 +47,8 @@ app.use('/api/subjects', subjectsRoutes);
 app.use('/api/behavior', behaviorRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/classes', classesRoutes);
+app.use('/api', lessonRoutes);
+app.use('/api', progressRoutes);
 //global error handler 
 app.use((error, req, res, next) => {
   res.status(error.statusCode || 500).json({

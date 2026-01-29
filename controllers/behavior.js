@@ -6,7 +6,7 @@ import httpStatusText from '../utils/httpStatusText.js';
 const { BehaviorRecord, Student, Teacher } = models;
 
 /**
- * @desc    Record new behavior violation using studentIdCode and employeeId
+ * @desc    Record new behavior violation using studentIdCode and authenticated user
  * @route   POST /api/behavior/violations
  * @method  POST
  * @access  Admin/Teacher
@@ -14,7 +14,6 @@ const { BehaviorRecord, Student, Teacher } = models;
 const createViolation = asyncWrapper(async (req, res, next) => {
     const {
         studentIdCode,
-        employeeId,
         type,
         severity,
         description,
@@ -35,14 +34,15 @@ const createViolation = asyncWrapper(async (req, res, next) => {
         return next(appError.create(`Student with code ${studentIdCode} not found`, 404, httpStatusText.FAIL));
     }
 
-    const teacher = await Teacher.findOne({ where: { employeeId: employeeId } });
-    if (!teacher) {
-        return next(appError.create(`Teacher with employee ID ${employeeId} not found`, 404, httpStatusText.FAIL));
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+        return next(appError.create('User not authenticated', 401, httpStatusText.FAIL));
     }
 
+    // Use authenticated user's ID directly (works for both admin and teachers)
     const violation = await BehaviorRecord.create({
         studentId: student.id,
-        reportedById: teacher.id,
+        reportedById: req.user.id,
         type,
         category: 'violation',
         severity,
@@ -68,7 +68,7 @@ const createViolation = asyncWrapper(async (req, res, next) => {
         data: {
             id: violation.id,
             studentName: student.name,
-            reportedBy: teacher.name,
+            reportedBy: req.user.id, // Using user ID since we don't have user name in token
             date: violation.date,
             marksDeducted: violation.marksDeducted,
             occurrenceCount: violation.occurrenceCount,
@@ -79,26 +79,30 @@ const createViolation = asyncWrapper(async (req, res, next) => {
 });
 
 /**
- * @desc    Record positive behavior using studentIdCode and employeeId
+ * @desc    Record positive behavior using studentIdCode and authenticated user
  * @route   POST /api/behavior/positive
  * @method  POST
  * @access  Admin/Teacher
  */
 const createPositiveBehavior = asyncWrapper(async (req, res, next) => {
-    const { studentIdCode, employeeId, type, description, points, date } = req.body;
+    const { studentIdCode, type, description, points, date } = req.body;
 
     const student = await Student.findOne({ where: { studentId: studentIdCode } });
-    const teacher = await Teacher.findOne({ where: { employeeId: employeeId } });
+    if (!student) {
+        return next(appError.create("Student not found", 404, httpStatusText.FAIL));
+    }
 
-    if (!student || !teacher) {
-        return next(appError.create("Student or Teacher not found", 404, httpStatusText.FAIL));
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+        return next(appError.create('User not authenticated', 401, httpStatusText.FAIL));
     }
 
     const pointsToAdd = points || 10;
 
+    // Use authenticated user's ID directly (works for both admin and teachers)
     const record = await BehaviorRecord.create({
         studentId: student.id,
-        reportedById: teacher.id,
+        reportedById: req.user.id,
         type,
         category: 'positive',
         description,
@@ -153,9 +157,9 @@ const getViolations = asyncWrapper(async (req, res, next) => {
                 attributes: ['id', 'name', 'studentId', 'behaviorScore']
             },
             {
-                model: Teacher,
+                model: models.User,
                 as: 'reportedBy',
-                attributes: ['name']
+                attributes: ['id', 'name']
             }
         ]
     });
@@ -208,9 +212,9 @@ const getPositiveBehaviors = asyncWrapper(async (req, res, next) => {
                 attributes: ['id', 'name', 'studentId', 'behaviorScore']
             },
             {
-                model: Teacher,
+                model: models.User,
                 as: 'reportedBy',
-                attributes: ['name']
+                attributes: ['id', 'name']
             }
         ]
     });

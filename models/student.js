@@ -79,6 +79,13 @@ const Student = sequelize.define('Student', {
         defaultValue: 'عادي',
         allowNull: false
     },
+    studentLevel: {
+        type: DataTypes.ENUM('high', 'medium', 'special_needs'),
+        field: 'student_level',  // Map to database column name
+        defaultValue: 'medium',
+        allowNull: false,
+        comment: 'Student performance level based on diagnostic and formative assessments'
+    },
     medicalInfo: {
         type: DataTypes.JSONB,
         defaultValue: {
@@ -94,7 +101,8 @@ const Student = sequelize.define('Student', {
         { fields: ['classId'] },
         { fields: ['status'] },
         { fields: ['enrollmentDate'] },
-        { fields: ['studentCategory'] }
+        { fields: ['studentCategory'] },
+        { fields: ['student_level'] }  // Use database column name, not Sequelize field name
     ],
 });
 
@@ -184,7 +192,8 @@ const validateUpdateStudent = (obj) => {
         conditions: Joi.array().items(Joi.string()).optional(),
         attendanceRate: Joi.number().min(0).max(100).optional(),
         behaviorScore: Joi.number().integer().min(0).max(100).optional(),
-        studentCategory: Joi.string().valid('عادي', 'اصحاب الهمم', 'اصحاب المراسيم', 'أبناء المواطنات').optional()
+        studentCategory: Joi.string().valid('عادي', 'اصحاب الهمم', 'اصحاب المراسيم', 'أبناء المواطنات').optional(),
+        studentLevel: Joi.string().valid('high', 'medium', 'special_needs').optional()
     });
     return schema.validate(obj);
 };
